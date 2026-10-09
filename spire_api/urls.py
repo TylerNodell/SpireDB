@@ -13,12 +13,21 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import path
-from django.views.decorators.csrf import csrf_exempt
 from graphene_django.views import GraphQLView
+
+
+class PrivateGraphQLView(LoginRequiredMixin, GraphQLView):
+    # The schema exposes tenant records and create/update/delete mutations,
+    # so only logged-in users (e.g. via /admin/) may use it; others get a 403.
+    # CSRF protection stays on because authentication is by session cookie.
+    raise_exception = True
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('graphql', csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    path('graphql', PrivateGraphQLView.as_view(graphiql=settings.DEBUG)),
 ]
