@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,11 +26,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET")
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "The SECRET environment variable must be set (see .env.example)."
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Off unless explicitly enabled, e.g. DJANGO_DEBUG=1 in a local .env file.
+DEBUG = os.environ.get("DJANGO_DEBUG", "").lower() in ("1", "true", "yes", "on")
 
-ALLOWED_HOSTS = []
+# Comma-separated host names, e.g. DJANGO_ALLOWED_HOSTS=api.example.com
+# (with DEBUG on and no hosts set, Django still accepts localhost).
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+
+# Outside of DEBUG, only send cookies over HTTPS and redirect HTTP to HTTPS.
+# Set DJANGO_SECURE_SSL_REDIRECT=0 if a reverse proxy already does the redirect.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = (
+    not DEBUG and os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "1") != "0"
+)
+# HSTS is opt-in because it is hard to undo, e.g. DJANGO_SECURE_HSTS_SECONDS=31536000
+SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "0"))
 
 
 # Application definition
