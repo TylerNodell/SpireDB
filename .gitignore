@@ -1,2 +1,7 @@
 .env
 data.json
+# Local databases, data dumps and Python bytecode
+db.sqlite3
+*.sqlite3
+__pycache__/
+*.py[cod]
